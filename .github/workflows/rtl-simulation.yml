@@ -19,7 +19,7 @@ jobs:
 
     steps:
       - name: Check out repository and methodology
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           submodules: recursive
           token: ${{ secrets.MOSAIC_FLOW_TOKEN || github.token }}
@@ -44,7 +44,7 @@ jobs:
         run: make flow-config-check
 
       - name: Cache open-source tools
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: ~/.cache/mosaic
           key: mosaic-tools-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('mosaic-flow/config/tool-versions.env') }}
@@ -76,7 +76,7 @@ jobs:
 
       - name: Upload RTL reports
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: open-source-rtl-reports
           path: reports/
@@ -89,7 +89,7 @@ jobs:
 
     steps:
       - name: Check out repository and methodology
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           submodules: recursive
           token: ${{ secrets.MOSAIC_FLOW_TOKEN || github.token }}
@@ -113,11 +113,20 @@ jobs:
       - name: Validate project flow selection
         run: make flow-config-check
 
+      - name: Initialize container diagnostics
+        run: |
+          mkdir -p ci-artifacts
+          {
+            echo "module_revision=${GITHUB_SHA}"
+            echo "mosaic_flow_revision=${{ steps.flow-revision.outputs.revision }}"
+            echo "runner=${RUNNER_OS}/${RUNNER_ARCH}"
+          } > ci-artifacts/container-context.txt
+
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@v4
 
       - name: Build container image
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
         with:
           context: .
           build-contexts: |
@@ -133,16 +142,20 @@ jobs:
 
       - name: Run portable flow in container
         run: |
+          set -o pipefail
           docker run --rm \
             --user "$(id -u):$(id -g)" \
             --env HOME=/tmp \
             --volume "${GITHUB_WORKSPACE}:/workspace" \
-            "mosaic-module-ci:${GITHUB_SHA}" clean open-source
+            "mosaic-module-ci:${GITHUB_SHA}" clean open-source \
+            2>&1 | tee ci-artifacts/container-flow.log
 
       - name: Upload container RTL reports
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: container-open-source-rtl-reports
-          path: reports/
+          path: |
+            reports/
+            ci-artifacts/
           if-no-files-found: error
