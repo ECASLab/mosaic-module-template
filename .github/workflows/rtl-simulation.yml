@@ -18,14 +18,21 @@ jobs:
     timeout-minutes: 15
 
     steps:
-      - name: Check out repository and methodology
+      - name: Check out module repository
         uses: actions/checkout@v7
         with:
-          submodules: recursive
-          token: ${{ secrets.MOSAIC_FLOW_TOKEN || github.token }}
           persist-credentials: false
 
-      - name: Verify pinned mosaic-flow submodule revision
+      - name: Initialize native diagnostics
+        if: always()
+        run: |
+          mkdir -p ci-artifacts
+          {
+            echo "module_revision=${GITHUB_SHA}"
+            echo "runner=${RUNNER_OS}/${RUNNER_ARCH}"
+          } > ci-artifacts/native-context.txt
+
+      - name: Read pinned mosaic-flow submodule revision
         id: flow-revision
         run: |
           revision="$(git ls-files --stage mosaic-flow | awk '$1 == "160000" {print $2}')"
@@ -33,12 +40,35 @@ jobs:
             echo "mosaic-flow must be a pinned Git submodule" >&2
             exit 1
           fi
-          checked_out_revision="$(git -C mosaic-flow rev-parse HEAD)"
-          if [[ "${checked_out_revision}" != "${revision}" ]]; then
-            echo "mosaic-flow checkout ${checked_out_revision} does not match gitlink ${revision}" >&2
+          echo "mosaic_flow_revision=${revision}" >> ci-artifacts/native-context.txt
+          echo "revision=${revision}" >> "${GITHUB_OUTPUT}"
+
+      - name: Check mosaic-flow repository access
+        env:
+          MOSAIC_FLOW_TOKEN: ${{ secrets.MOSAIC_FLOW_TOKEN }}
+        run: |
+          if [[ -z "${MOSAIC_FLOW_TOKEN}" ]]; then
+            echo "Configure the MOSAIC_FLOW_TOKEN repository or organization secret with read-only access to ECASLab/mosaic-flow" >&2
             exit 1
           fi
-          echo "revision=${revision}" >> "${GITHUB_OUTPUT}"
+
+      - name: Check out pinned mosaic-flow
+        uses: actions/checkout@v7
+        with:
+          repository: ECASLab/mosaic-flow
+          ref: ${{ steps.flow-revision.outputs.revision }}
+          path: mosaic-flow
+          token: ${{ secrets.MOSAIC_FLOW_TOKEN }}
+          persist-credentials: false
+
+      - name: Verify mosaic-flow checkout
+        run: |
+          checked_out_revision="$(git -C mosaic-flow rev-parse HEAD)"
+          expected_revision="${{ steps.flow-revision.outputs.revision }}"
+          if [[ "${checked_out_revision}" != "${expected_revision}" ]]; then
+            echo "mosaic-flow checkout ${checked_out_revision} does not match gitlink ${expected_revision}" >&2
+            exit 1
+          fi
 
       - name: Validate project flow selection
         run: make flow-config-check
@@ -61,6 +91,7 @@ jobs:
 
       - name: Record tool versions
         run: |
+          set -o pipefail
           mkdir -p reports/tool_versions
           {
             verilator --version
@@ -72,14 +103,18 @@ jobs:
           } | tee reports/tool_versions/versions.log
 
       - name: Run portable open-source RTL flow
-        run: make open-source
+        run: |
+          set -o pipefail
+          make open-source 2>&1 | tee ci-artifacts/native-flow.log
 
       - name: Upload RTL reports
         if: always()
         uses: actions/upload-artifact@v7
         with:
           name: open-source-rtl-reports
-          path: reports/
+          path: |
+            reports/
+            ci-artifacts/
           if-no-files-found: error
 
   container-checks:
@@ -88,14 +123,21 @@ jobs:
     timeout-minutes: 30
 
     steps:
-      - name: Check out repository and methodology
+      - name: Check out module repository
         uses: actions/checkout@v7
         with:
-          submodules: recursive
-          token: ${{ secrets.MOSAIC_FLOW_TOKEN || github.token }}
           persist-credentials: false
 
-      - name: Verify pinned mosaic-flow submodule revision
+      - name: Initialize container diagnostics
+        if: always()
+        run: |
+          mkdir -p ci-artifacts
+          {
+            echo "module_revision=${GITHUB_SHA}"
+            echo "runner=${RUNNER_OS}/${RUNNER_ARCH}"
+          } > ci-artifacts/container-context.txt
+
+      - name: Read pinned mosaic-flow submodule revision
         id: flow-revision
         run: |
           revision="$(git ls-files --stage mosaic-flow | awk '$1 == "160000" {print $2}')"
@@ -103,24 +145,38 @@ jobs:
             echo "mosaic-flow must be a pinned Git submodule" >&2
             exit 1
           fi
-          checked_out_revision="$(git -C mosaic-flow rev-parse HEAD)"
-          if [[ "${checked_out_revision}" != "${revision}" ]]; then
-            echo "mosaic-flow checkout ${checked_out_revision} does not match gitlink ${revision}" >&2
+          echo "mosaic_flow_revision=${revision}" >> ci-artifacts/container-context.txt
+          echo "revision=${revision}" >> "${GITHUB_OUTPUT}"
+
+      - name: Check mosaic-flow repository access
+        env:
+          MOSAIC_FLOW_TOKEN: ${{ secrets.MOSAIC_FLOW_TOKEN }}
+        run: |
+          if [[ -z "${MOSAIC_FLOW_TOKEN}" ]]; then
+            echo "Configure the MOSAIC_FLOW_TOKEN repository or organization secret with read-only access to ECASLab/mosaic-flow" >&2
             exit 1
           fi
-          echo "revision=${revision}" >> "${GITHUB_OUTPUT}"
+
+      - name: Check out pinned mosaic-flow
+        uses: actions/checkout@v7
+        with:
+          repository: ECASLab/mosaic-flow
+          ref: ${{ steps.flow-revision.outputs.revision }}
+          path: mosaic-flow
+          token: ${{ secrets.MOSAIC_FLOW_TOKEN }}
+          persist-credentials: false
+
+      - name: Verify mosaic-flow checkout
+        run: |
+          checked_out_revision="$(git -C mosaic-flow rev-parse HEAD)"
+          expected_revision="${{ steps.flow-revision.outputs.revision }}"
+          if [[ "${checked_out_revision}" != "${expected_revision}" ]]; then
+            echo "mosaic-flow checkout ${checked_out_revision} does not match gitlink ${expected_revision}" >&2
+            exit 1
+          fi
 
       - name: Validate project flow selection
         run: make flow-config-check
-
-      - name: Initialize container diagnostics
-        run: |
-          mkdir -p ci-artifacts
-          {
-            echo "module_revision=${GITHUB_SHA}"
-            echo "mosaic_flow_revision=${{ steps.flow-revision.outputs.revision }}"
-            echo "runner=${RUNNER_OS}/${RUNNER_ARCH}"
-          } > ci-artifacts/container-context.txt
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v4
