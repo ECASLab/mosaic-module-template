@@ -18,10 +18,14 @@ jobs:
     timeout-minutes: 15
 
     steps:
-      - name: Check out repository
+      - name: Check out repository and methodology
         uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          token: ${{ secrets.MOSAIC_FLOW_TOKEN || github.token }}
+          persist-credentials: false
 
-      - name: Read pinned mosaic-flow submodule revision
+      - name: Verify pinned mosaic-flow submodule revision
         id: flow-revision
         run: |
           revision="$(git ls-files --stage mosaic-flow | awk '$1 == "160000" {print $2}')"
@@ -29,25 +33,12 @@ jobs:
             echo "mosaic-flow must be a pinned Git submodule" >&2
             exit 1
           fi
-          echo "revision=${revision}" >> "${GITHUB_OUTPUT}"
-
-      - name: Check mosaic-flow repository access
-        env:
-          MOSAIC_FLOW_TOKEN: ${{ secrets.MOSAIC_FLOW_TOKEN }}
-        run: |
-          if [[ -z "${MOSAIC_FLOW_TOKEN}" ]]; then
-            echo "Configure the MOSAIC_FLOW_TOKEN repository secret with read-only access to ECASLab/mosaic-flow" >&2
+          checked_out_revision="$(git -C mosaic-flow rev-parse HEAD)"
+          if [[ "${checked_out_revision}" != "${revision}" ]]; then
+            echo "mosaic-flow checkout ${checked_out_revision} does not match gitlink ${revision}" >&2
             exit 1
           fi
-
-      - name: Check out pinned mosaic-flow
-        uses: actions/checkout@v4
-        with:
-          repository: ECASLab/mosaic-flow
-          ref: ${{ steps.flow-revision.outputs.revision }}
-          path: mosaic-flow
-          token: ${{ secrets.MOSAIC_FLOW_TOKEN }}
-          persist-credentials: false
+          echo "revision=${revision}" >> "${GITHUB_OUTPUT}"
 
       - name: Validate project flow selection
         run: make flow-config-check
@@ -97,10 +88,14 @@ jobs:
     timeout-minutes: 30
 
     steps:
-      - name: Check out repository
+      - name: Check out repository and methodology
         uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          token: ${{ secrets.MOSAIC_FLOW_TOKEN || github.token }}
+          persist-credentials: false
 
-      - name: Read pinned mosaic-flow submodule revision
+      - name: Verify pinned mosaic-flow submodule revision
         id: flow-revision
         run: |
           revision="$(git ls-files --stage mosaic-flow | awk '$1 == "160000" {print $2}')"
@@ -108,25 +103,12 @@ jobs:
             echo "mosaic-flow must be a pinned Git submodule" >&2
             exit 1
           fi
-          echo "revision=${revision}" >> "${GITHUB_OUTPUT}"
-
-      - name: Check mosaic-flow repository access
-        env:
-          MOSAIC_FLOW_TOKEN: ${{ secrets.MOSAIC_FLOW_TOKEN }}
-        run: |
-          if [[ -z "${MOSAIC_FLOW_TOKEN}" ]]; then
-            echo "Configure the MOSAIC_FLOW_TOKEN repository secret with read-only access to ECASLab/mosaic-flow" >&2
+          checked_out_revision="$(git -C mosaic-flow rev-parse HEAD)"
+          if [[ "${checked_out_revision}" != "${revision}" ]]; then
+            echo "mosaic-flow checkout ${checked_out_revision} does not match gitlink ${revision}" >&2
             exit 1
           fi
-
-      - name: Check out pinned mosaic-flow
-        uses: actions/checkout@v4
-        with:
-          repository: ECASLab/mosaic-flow
-          ref: ${{ steps.flow-revision.outputs.revision }}
-          path: mosaic-flow
-          token: ${{ secrets.MOSAIC_FLOW_TOKEN }}
-          persist-credentials: false
+          echo "revision=${revision}" >> "${GITHUB_OUTPUT}"
 
       - name: Validate project flow selection
         run: make flow-config-check
