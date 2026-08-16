@@ -1,0 +1,25 @@
+# Project flow selection. Shared defaults live in mosaic-flow/config/flows.mk.
+FLOW_verible_lint := enabled
+FLOW_verible_format := enabled
+FLOW_slang_elaboration := enabled
+FLOW_verilator_lint := enabled
+FLOW_yosys_synthesis := enabled
+FLOW_symbiyosys_formal := enabled
+FLOW_eqy_equivalence := enabled
+FLOW_verilator_sim := enabled
+FLOW_openroad := disabled
+
+FLOW_vcs_sim := enabled
+FLOW_vc_lint := enabled
+FLOW_vc_cdc := enabled
+FLOW_sg_cdc := disabled
+FLOW_sg_dft := enabled
+FLOW_vc_lp := enabled
+FLOW_synopsys_synthesis := enabled
+FLOW_synopsys_primetime := enabled
+FLOW_synopsys_primepower := enabled
+
+# Project dependency overrides. Dependencies must use canonical flow IDs.
+FLOW_DEPENDENCIES_eqy_equivalence := yosys_synthesis
+FLOW_DEPENDENCIES_synopsys_primetime := synopsys_synthesis
+FLOW_DEPENDENCIES_synopsys_primepower := vcs_sim synopsys_synthesis

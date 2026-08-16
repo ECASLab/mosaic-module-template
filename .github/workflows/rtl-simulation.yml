@@ -1,0 +1,166 @@
+name: Open-source RTL quality gate
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  FLOW_ROOT: ${{ github.workspace }}/mosaic-flow
+
+jobs:
+  rtl-checks:
+    name: Open-source RTL checks
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Read pinned mosaic-flow submodule revision
+        id: flow-revision
+        run: |
+          revision="$(git ls-files --stage mosaic-flow | awk '$1 == "160000" {print $2}')"
+          if [[ ! "${revision}" =~ ^[0-9a-f]{40}$ ]]; then
+            echo "mosaic-flow must be a pinned Git submodule" >&2
+            exit 1
+          fi
+          echo "revision=${revision}" >> "${GITHUB_OUTPUT}"
+
+      - name: Check mosaic-flow repository access
+        env:
+          MOSAIC_FLOW_TOKEN: ${{ secrets.MOSAIC_FLOW_TOKEN }}
+        run: |
+          if [[ -z "${MOSAIC_FLOW_TOKEN}" ]]; then
+            echo "Configure the MOSAIC_FLOW_TOKEN repository secret with read-only access to ECASLab/mosaic-flow" >&2
+            exit 1
+          fi
+
+      - name: Check out pinned mosaic-flow
+        uses: actions/checkout@v4
+        with:
+          repository: ECASLab/mosaic-flow
+          ref: ${{ steps.flow-revision.outputs.revision }}
+          path: mosaic-flow
+          token: ${{ secrets.MOSAIC_FLOW_TOKEN }}
+          persist-credentials: false
+
+      - name: Validate project flow selection
+        run: make flow-config-check
+
+      - name: Cache open-source tools
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/mosaic
+          key: mosaic-tools-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('mosaic-flow/config/tool-versions.env') }}
+
+      - name: Set up pinned open-source tools
+        run: make setup-open-source
+
+      - name: Export pinned open-source tool paths
+        run: |
+          # shellcheck disable=SC2016
+          make --no-print-directory --silent \
+            --eval='mosaic-export-tool-paths: ; @printf "%s\n" "$(VERIBLE_ROOT)/bin" "$(SLANG_ROOT)/bin" "$(OSS_CAD_SUITE_ROOT)/bin"' \
+            mosaic-export-tool-paths >> "${GITHUB_PATH}"
+
+      - name: Record tool versions
+        run: |
+          mkdir -p reports/tool_versions
+          {
+            verilator --version
+            yosys --version
+            sby --version
+            eqy --version
+            verible-verilog-lint --version
+            slang --version
+          } | tee reports/tool_versions/versions.log
+
+      - name: Run portable open-source RTL flow
+        run: make open-source
+
+      - name: Upload RTL reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: open-source-rtl-reports
+          path: reports/
+          if-no-files-found: error
+
+  container-checks:
+    name: Containerized open-source RTL checks
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Read pinned mosaic-flow submodule revision
+        id: flow-revision
+        run: |
+          revision="$(git ls-files --stage mosaic-flow | awk '$1 == "160000" {print $2}')"
+          if [[ ! "${revision}" =~ ^[0-9a-f]{40}$ ]]; then
+            echo "mosaic-flow must be a pinned Git submodule" >&2
+            exit 1
+          fi
+          echo "revision=${revision}" >> "${GITHUB_OUTPUT}"
+
+      - name: Check mosaic-flow repository access
+        env:
+          MOSAIC_FLOW_TOKEN: ${{ secrets.MOSAIC_FLOW_TOKEN }}
+        run: |
+          if [[ -z "${MOSAIC_FLOW_TOKEN}" ]]; then
+            echo "Configure the MOSAIC_FLOW_TOKEN repository secret with read-only access to ECASLab/mosaic-flow" >&2
+            exit 1
+          fi
+
+      - name: Check out pinned mosaic-flow
+        uses: actions/checkout@v4
+        with:
+          repository: ECASLab/mosaic-flow
+          ref: ${{ steps.flow-revision.outputs.revision }}
+          path: mosaic-flow
+          token: ${{ secrets.MOSAIC_FLOW_TOKEN }}
+          persist-credentials: false
+
+      - name: Validate project flow selection
+        run: make flow-config-check
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build container image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          build-contexts: |
+            mosaic-flow=./mosaic-flow
+          build-args: |
+            MOSAIC_FLOW_REVISION=${{ steps.flow-revision.outputs.revision }}
+          cache-from: type=gha,scope=mosaic-module-ci
+          cache-to: type=gha,mode=max,scope=mosaic-module-ci
+          load: true
+          platforms: linux/amd64
+          push: false
+          tags: mosaic-module-ci:${{ github.sha }}
+
+      - name: Run portable flow in container
+        run: |
+          docker run --rm \
+            --user "$(id -u):$(id -g)" \
+            --env HOME=/tmp \
+            --volume "${GITHUB_WORKSPACE}:/workspace" \
+            "mosaic-module-ci:${GITHUB_SHA}" clean open-source
+
+      - name: Upload container RTL reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: container-open-source-rtl-reports
+          path: reports/
+          if-no-files-found: error

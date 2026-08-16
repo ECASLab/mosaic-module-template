@@ -1,0 +1,70 @@
+# Module documentation
+
+This directory contains design-owned documentation for one MOSAIC RTL module.
+The root [repository README](../README.md) is the concise operational entry point
+for setup and execution. This file is the canonical index for detailed module
+design, configuration, verification, waiver, and release records.
+
+Shared methodology behavior remains documented under
+[`mosaic-flow/docs/`](../mosaic-flow/docs/README.md).
+
+## Ownership boundary
+
+Documentation here describes this module:
+
+- Its hardware interface and behavior
+- Its architecture and implementation choices
+- Its verification intent and coverage
+- Its constraints, power intent, and accepted waivers
+- Its release evidence and supported configurations
+
+Documentation under `mosaic-flow/docs/` describes the reusable methodology:
+
+- How orchestration and quality gates work
+- What each flow consumes and produces
+- Shared configuration precedence and status semantics
+- How shared adapters and tool versions are maintained
+
+Do not copy shared methodology documentation into this directory. Link to it and
+keep module-specific decisions here.
+
+## Recommended reading order
+
+1. [Creating a module](creating-a-module.md) explains how to turn this template
+   into a new independently versioned RTL repository.
+2. [Repository structure](repository-structure.md) explains where each artifact
+   belongs and why the hierarchy is split this way.
+3. [Project configuration](project-configuration.md) covers module identity,
+   file lists, flow selection, dependencies, constraints, and site inputs.
+4. [Interface specification](interface.md) defines the hardware contract that
+   consumers may rely on.
+5. [Verification plan](verification-plan.md) maps requirements to simulation,
+   assertions, formal properties, and coverage.
+6. [Reviewed waivers](waivers.md) records every accepted tool exception.
+7. [Release checklist](release-checklist.md) defines the evidence required
+   before publishing a module revision.
+
+## Quick reference
+
+| Goal | Location or command |
+| --- | --- |
+| Rename the example design | [Creating a module](creating-a-module.md#rename-the-example-module) |
+| Set top names and paths | `config/design.mk` |
+| Enable or disable checks | `config/flows.mk` |
+| Add RTL sources | `filelists/rtl.f` |
+| Add simulation sources | `filelists/tb.f` |
+| Define formal proof | `flows/symbiyosys/formal.sby` |
+| Define synthesis timing | `flows/synthesis/timing.sdc` |
+| Define CDC intent | `flows/cdc/constraints.tcl` |
+| Define DFT intent | `flows/sg_dft/constraints.tcl` |
+| Define power intent | `flows/vc_lp/power.upf` |
+| Validate project policy | `make flow-config-check` |
+| Run portable acceptance | `make clean open-source` |
+| Inspect results | `reports/<flow-id>/` |
+
+## Documentation completion rule
+
+The template text is not release evidence. Replace examples and instructions
+with reviewed module-specific content before the first release. Update the
+affected document whenever a port, parameter, protocol, supported configuration,
+constraint, verification item, waiver, or release policy changes.
