@@ -161,6 +161,11 @@ versions, and policy before accepting the pointer update.
 
 ## Further reference
 
+For multiple independently checked tops in one repository, apply this
+configuration hierarchy separately in each module root. The repository-level
+manifest and GitHub Actions matrix are documented in
+[Multi-module repositories](multi-module-repositories.md).
+
 The authoritative shared configuration semantics are documented in
 [`mosaic-flow/docs/configuration.md`](../mosaic-flow/docs/configuration.md).
 The complete flow IDs, inputs, outputs, and tool references are in the shared

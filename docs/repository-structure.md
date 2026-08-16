@@ -151,3 +151,12 @@ When artifacts disagree, use this order:
 
 Correct any disagreement before release. A passing tool result does not excuse
 stale interface or verification documentation.
+
+## Multi-module variation
+
+The hierarchy above defines one `MODULE_ROOT`. A repository that owns several
+related modules repeats this hierarchy under `modules/<name>/` and keeps one
+repository-level `mosaic-flow` submodule. See
+[Multi-module repositories](multi-module-repositories.md) for the directory
+contract, CI manifest, matrix execution, regression model, and integration
+ordering.

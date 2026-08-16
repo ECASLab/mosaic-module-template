@@ -55,6 +55,10 @@ work/                  Generated tool databases
 See the [repository structure](docs/repository-structure.md) for ownership and
 source-of-truth rules.
 
+Repositories that intentionally own several related RTL modules should use the
+[multi-module repository guide](docs/multi-module-repositories.md). Each module
+retains an independent project root, flow policy, regression, and report tree.
+
 ## Configuration
 
 The root `Makefile` is a thin consumer of `mosaic-flow/mk/module.mk`.

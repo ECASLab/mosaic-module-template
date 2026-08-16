@@ -34,14 +34,17 @@ keep module-specific decisions here.
    into a new independently versioned RTL repository.
 2. [Repository structure](repository-structure.md) explains where each artifact
    belongs and why the hierarchy is split this way.
-3. [Project configuration](project-configuration.md) covers module identity,
+3. [Multi-module repositories](multi-module-repositories.md) defines the
+   optional hierarchy, manifest, CI matrix, and regression contract for a
+   repository that owns several related RTL modules.
+4. [Project configuration](project-configuration.md) covers module identity,
    file lists, flow selection, dependencies, constraints, and site inputs.
-4. [Interface specification](interface.md) defines the hardware contract that
+5. [Interface specification](interface.md) defines the hardware contract that
    consumers may rely on.
-5. [Verification plan](verification-plan.md) maps requirements to simulation,
+6. [Verification plan](verification-plan.md) maps requirements to simulation,
    assertions, formal properties, and coverage.
-6. [Reviewed waivers](waivers.md) records every accepted tool exception.
-7. [Release checklist](release-checklist.md) defines the evidence required
+7. [Reviewed waivers](waivers.md) records every accepted tool exception.
+8. [Release checklist](release-checklist.md) defines the evidence required
    before publishing a module revision.
 
 ## Quick reference
@@ -49,6 +52,7 @@ keep module-specific decisions here.
 | Goal | Location or command |
 | --- | --- |
 | Rename the example design | [Creating a module](creating-a-module.md#rename-the-example-module) |
+| Configure several module roots | [Multi-module repositories](multi-module-repositories.md) |
 | Set top names and paths | `config/design.mk` |
 | Enable or disable checks | `config/flows.mk` |
 | Add RTL sources | `filelists/rtl.f` |
