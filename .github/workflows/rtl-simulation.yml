@@ -43,22 +43,12 @@ jobs:
           echo "mosaic_flow_revision=${revision}" >> ci-artifacts/native-context.txt
           echo "revision=${revision}" >> "${GITHUB_OUTPUT}"
 
-      - name: Check mosaic-flow repository access
-        env:
-          MOSAIC_FLOW_TOKEN: ${{ secrets.MOSAIC_FLOW_TOKEN }}
-        run: |
-          if [[ -z "${MOSAIC_FLOW_TOKEN}" ]]; then
-            echo "Configure the MOSAIC_FLOW_TOKEN repository or organization secret with read-only access to ECASLab/mosaic-flow" >&2
-            exit 1
-          fi
-
       - name: Check out pinned mosaic-flow
         uses: actions/checkout@v7
         with:
           repository: ECASLab/mosaic-flow
           ref: ${{ steps.flow-revision.outputs.revision }}
           path: mosaic-flow
-          token: ${{ secrets.MOSAIC_FLOW_TOKEN }}
           persist-credentials: false
 
       - name: Verify mosaic-flow checkout
@@ -148,22 +138,12 @@ jobs:
           echo "mosaic_flow_revision=${revision}" >> ci-artifacts/container-context.txt
           echo "revision=${revision}" >> "${GITHUB_OUTPUT}"
 
-      - name: Check mosaic-flow repository access
-        env:
-          MOSAIC_FLOW_TOKEN: ${{ secrets.MOSAIC_FLOW_TOKEN }}
-        run: |
-          if [[ -z "${MOSAIC_FLOW_TOKEN}" ]]; then
-            echo "Configure the MOSAIC_FLOW_TOKEN repository or organization secret with read-only access to ECASLab/mosaic-flow" >&2
-            exit 1
-          fi
-
       - name: Check out pinned mosaic-flow
         uses: actions/checkout@v7
         with:
           repository: ECASLab/mosaic-flow
           ref: ${{ steps.flow-revision.outputs.revision }}
           path: mosaic-flow
-          token: ${{ secrets.MOSAIC_FLOW_TOKEN }}
           persist-credentials: false
 
       - name: Verify mosaic-flow checkout

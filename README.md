@@ -83,11 +83,9 @@ Start from [Creating a module](docs/creating-a-module.md). At minimum:
 pushes and pull requests using both native and containerized execution. It does
 not invoke licensed Synopsys tools.
 
-Because `ECASLab/mosaic-flow` is private, configure the `MOSAIC_FLOW_TOKEN`
-repository or organization secret with read-only `Contents` access. The
-repository-scoped `GITHUB_TOKEN` cannot read a separate private repository. CI
-checks out the exact submodule revision recorded here rather than a floating
-branch.
+`ECASLab/mosaic-flow` is public, so CI does not require an additional repository
+secret. It checks out the exact submodule revision recorded here rather than a
+floating branch.
 
 Manual container build and execution commands are documented under
 [initial acceptance](docs/creating-a-module.md#run-initial-acceptance).

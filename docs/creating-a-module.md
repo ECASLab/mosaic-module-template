@@ -156,11 +156,11 @@ See [Project configuration](project-configuration.md) and the shared
 
 ## Configure GitHub Actions
 
-Set the `MOSAIC_FLOW_TOKEN` repository or organization secret because
-`ECASLab/mosaic-flow` requires authenticated read access. Use a fine-grained
-credential with read-only `Contents` permission and no access beyond what
-checkout needs. The default `GITHUB_TOKEN` is scoped to the module repository
-and cannot read the separate private methodology repository.
+No additional GitHub Actions secret is required while `ECASLab/mosaic-flow`
+remains public. CI uses the repository's standard read token to check out the
+exact public methodology revision recorded by the module gitlink. If the
+methodology becomes private, configure a separate read-only credential and
+update the checkout policy deliberately.
 
 Update Docker image labels if the new repository URL differs from the template.
 Do not change the workflow to fetch a floating methodology branch. CI reads the
