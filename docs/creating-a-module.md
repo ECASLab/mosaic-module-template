@@ -61,6 +61,20 @@ module contract small and explicit. Document:
 Record the contract in [Interface specification](interface.md) before other
 modules depend on it.
 
+### SystemVerilog time declarations
+
+Keep synthesizable RTL compatible with every enabled frontend. The pinned Yosys
+frontend does not accept module-scoped `timeunit` and `timeprecision`
+declarations in synthesizable source files. When a synthesizable file needs an
+explicit simulation time scale, use a compilation-unit directive:
+
+```systemverilog
+`timescale 1ns/1ps
+```
+
+Testbench-only modules may use `timeunit` and `timeprecision` when every enabled
+simulator and linter accepts them. Do not add delays to synthesizable RTL.
+
 ## Build authoritative file lists
 
 Update `filelists/rtl.f` in dependency order. Add packages before modules that
@@ -94,6 +108,27 @@ Update all of these together:
 
 Avoid assumptions that remove legal interface behavior from formal analysis.
 Use negative tests to prove the testbench and assertions detect injected faults.
+
+### Parameterized modules
+
+The current portable flow synthesizes and compares one `DESIGN_TOP` using its
+default parameter values. A simulation or formal harness may instantiate several
+parameter combinations, but that does not create synthesis or equivalence
+evidence for each combination.
+
+For every parameter value that changes generated structure:
+
+1. Exercise it in the self-checking simulation regression.
+2. Include it in formal verification when practical.
+3. Record whether synthesis and equivalence are required for that profile.
+4. Use a reviewed wrapper top or a separate configured verification target when
+   persistent per-profile synthesis evidence is required.
+5. Do not report a manual diagnostic command as release evidence unless its
+   configuration, output, and status are retained reproducibly.
+
+Do not add module-specific orchestration to the thin Makefile. A general
+parameter-matrix runner belongs in `mosaic-flow` and must be versioned as a
+shared methodology feature.
 
 ## Configure design intent
 

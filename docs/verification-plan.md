@@ -136,6 +136,17 @@ structure.
 | --- | --- | --- | --- | --- | --- |
 | `DATA_WIDTH=32` | Required | Required | Required | Required | Template smoke |
 
+The current Yosys and EQY adapters qualify only `DESIGN_TOP` with its default
+parameter values. Listing another profile in this table does not make synthesis
+or equivalence evidence exist for it. Use a reviewed wrapper top or separate
+configured verification target for every profile that requires persistent
+synthesis and EQY reports until `mosaic-flow` provides a shared parameter-matrix
+contract.
+
+Simulation and formal harnesses may instantiate multiple profiles in one top.
+Record those instances explicitly and distinguish structural elaboration from
+per-profile synthesis, timing, power, and equivalence evidence.
+
 ## Negative testing
 
 Qualification must prove that checking fails when behavior is wrong. Introduce

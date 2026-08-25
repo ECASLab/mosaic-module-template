@@ -1,6 +1,6 @@
-/work/
-/reports/
-/ci-artifacts/
+**/work/
+**/reports/
+**/ci-artifacts/
 *.log
 *.vcd
 *.fsdb

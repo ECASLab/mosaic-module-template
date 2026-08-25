@@ -38,12 +38,15 @@ Convert the stock single-module layout deliberately:
    below that module root.
 3. Give the module its own thin Makefile and design-owned documentation.
 4. Keep `.github/`, `Dockerfile`, and `mosaic-flow/` at the repository root.
-5. Add every verification target to `.github/modules.json`.
-6. Replace the stock single-module jobs in
+5. Change the generated-artifact entries in `.gitignore` to recursive patterns
+   so every module's `work/`, `reports/`, and `ci-artifacts/` trees remain
+   untracked.
+6. Add every verification target to `.github/modules.json`.
+7. Replace the stock single-module jobs in
    `.github/workflows/rtl-simulation.yml` with the matrix jobs.
-7. Add integration roots only after the corresponding unit targets pass
+8. Add integration roots only after the corresponding unit targets pass
    independently.
-8. Run every manifest entry locally before enabling the new workflow.
+9. Run every manifest entry locally before enabling the new workflow.
 
 Do not leave the original single-module workflow active beside the matrix
 unless duplicate execution is intentional. The matrix becomes the
@@ -82,6 +85,29 @@ rtl-library/
 Each directory under `modules/` follows the normal module hierarchy documented
 in [Repository structure](repository-structure.md). An integration target uses
 the same hierarchy but may compile several released module sources together.
+
+## Generated-artifact policy
+
+The stock single-module ignore patterns must also cover nested module roots. Use
+recursive patterns in the repository-level `.gitignore`:
+
+```gitignore
+**/work/
+**/reports/
+**/ci-artifacts/
+```
+
+Do not add separate ignore entries every time a module is created. Confirm the
+policy before review:
+
+```sh
+git check-ignore modules/<name>/work/probe
+git check-ignore modules/<name>/reports/probe
+git check-ignore modules/<name>/ci-artifacts/probe
+```
+
+Every command must print the tested path. A missing result means the nested
+artifact tree is not ignored.
 
 ## Per-module Makefile
 
@@ -236,6 +262,36 @@ that declares `needs: module-checks` cannot start prematurely.
 The production workflow should retain the template's tool-version reporting and
 diagnostic artifact behavior. Use module-qualified diagnostic paths and artifact
 names so parallel jobs cannot be confused during review.
+
+Do not reduce the matrix workflow to only the abbreviated native job above. The
+repository-level conversion must preserve these behaviors from the stock
+workflow for every manifest entry:
+
+- Native tool setup uses the pinned `mosaic-flow` revision.
+- Tool versions are recorded below the module's `reports/tool_versions/` tree.
+- Native flow logs are written below the module's `ci-artifacts/` tree.
+- The container image embeds the same pinned methodology revision.
+- The container runs with `--workdir /workspace/${{ matrix.path }}`.
+- Native and container report artifacts include the module name.
+- Diagnostic artifacts are uploaded even when the flow fails.
+
+The container execution step must select the matrix module explicitly:
+
+```yaml
+- name: Run containerized module flow
+  run: |
+    docker run --rm \
+      --user "$(id -u):$(id -g)" \
+      --env HOME=/tmp \
+      --volume "${GITHUB_WORKSPACE}:/workspace" \
+      --workdir "/workspace/${{ matrix.path }}" \
+      "mosaic-module-ci:${GITHUB_SHA}" clean open-source
+```
+
+Use distinct artifact names such as
+`${{ matrix.name }}-native-reports` and
+`${{ matrix.name }}-container-reports`. Reusing one artifact name across matrix
+children can overwrite or combine evidence from unrelated module roots.
 
 ## RTL checks per module
 
