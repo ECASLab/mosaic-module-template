@@ -7,9 +7,11 @@ FLOW_yosys_synthesis := enabled
 FLOW_symbiyosys_formal := enabled
 FLOW_eqy_equivalence := enabled
 FLOW_verilator_sim := enabled
+FLOW_pyuvm_open_source := enabled
 FLOW_openroad := disabled
 
 FLOW_vcs_sim := enabled
+FLOW_pyuvm_commercial := disabled
 FLOW_vc_lint := enabled
 FLOW_vc_cdc := enabled
 FLOW_sg_cdc := disabled

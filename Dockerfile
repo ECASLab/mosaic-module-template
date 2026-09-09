@@ -10,8 +10,10 @@ RUN apt-get update \
         curl \
         g++ \
         git \
+        libpython3.12t64 \
         make \
         python3 \
+        python3-venv \
     && rm -rf /var/lib/apt/lists/*
 
 COPY --from=mosaic-flow /VERSION /opt/mosaic-flow/VERSION
@@ -24,7 +26,8 @@ RUN --mount=type=cache,id=oss-cad-suite,target=/opt/mosaic-tools/downloads \
     MOSAIC_TOOLS_ROOT=/opt/mosaic-tools /opt/mosaic-flow/ci/setup_open_source_tools.sh
 
 ENV FLOW_ROOT=/opt/mosaic-flow \
-    MOSAIC_TOOLS_ROOT=/opt/mosaic-tools
+    MOSAIC_TOOLS_ROOT=/opt/mosaic-tools \
+    PYTHONPYCACHEPREFIX=/tmp/mosaic-pycache
 
 ARG MOSAIC_FLOW_REVISION=unknown
 LABEL org.opencontainers.image.description="Open-source RTL verification environment for MOSAIC modules" \
