@@ -232,7 +232,7 @@ jobs:
         uses: actions/cache@v5
         with:
           path: ~/.cache/mosaic
-          key: mosaic-tools-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('mosaic-flow/config/tool-versions.env') }}
+          key: mosaic-tools-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('mosaic-flow/config/tool-versions.env', 'mosaic-flow/config/pyuvm-requirements.txt') }}
 
       - name: Validate module policy
         run: |
@@ -245,6 +245,11 @@ jobs:
           make -C "${{ matrix.path }}" \
             FLOW_ROOT="${GITHUB_WORKSPACE}/mosaic-flow" \
             clean open-source
+
+      - name: Validate module PyUVM evidence
+        run: |
+          ./.github/scripts/check-pyuvm-evidence.sh \
+            "${{ matrix.path }}/reports/pyuvm_open_source"
 
       - name: Upload module reports
         if: always()
@@ -270,6 +275,8 @@ workflow for every manifest entry:
 - Native tool setup uses the pinned `mosaic-flow` revision.
 - Tool versions are recorded below the module's `reports/tool_versions/` tree.
 - Native flow logs are written below the module's `ci-artifacts/` tree.
+- Enabled PyUVM flows retain clean JUnit, native HDL coverage, functional
+  coverage, and version evidence below the module's report tree.
 - The container image embeds the same pinned methodology revision.
 - The container runs with `--workdir /workspace/${{ matrix.path }}`.
 - Native and container report artifacts include the module name.
@@ -305,6 +312,8 @@ current module root. Consequently, each matrix child independently performs:
 - SymbiYosys formal verification
 - EQY RTL-to-netlist equivalence
 - Verilator simulation
+- PyUVM with the configured open-source simulator
+- Native HDL coverage and PyUVM functional coverage evidence
 - The aggregate open-source quality gate
 
 The module's `config/flows.mk` decides which checks are enabled. Dependencies
@@ -314,30 +323,34 @@ matrix child.
 
 ## Regression configuration
 
-The current simulator contract executes one `TB_TOP` per module. Configure that
-top as a self-checking unit regression rather than as a single manual test.
+The normal simulator contract executes one `TB_TOP` per module, while PyUVM
+executes the decorated tests in `PYUVM_TEST_MODULE` against `PYUVM_TOP`.
+Configure both paths as self-checking unit regressions.
 
 For each module:
 
 1. Set `TB_TOP` in `config/design.mk` to the regression top.
-2. List the DUT, assertions, testbench components, and tests in
-   `filelists/tb.f`.
-3. Make the regression top execute every required scenario.
-4. Make every mismatch, assertion failure, timeout, or incomplete test return a
+2. Set `PYUVM_TOP`, `PYUVM_TEST_MODULE`, and `PYUVM_TEST_PATH` for the Python
+   environment.
+3. Keep DUT and testbench sources in their primary lists, then keep shared
+   properties, assertions, and coverage in their dedicated filelists.
+4. Make both regression environments execute every required scenario.
+5. Make every mismatch, assertion failure, timeout, or incomplete test return a
    nonzero simulation status.
-5. Record the test inventory and expected coverage in
+6. Record the test inventory and expected native plus functional coverage in
    `docs/verification-plan.md`.
-6. Keep test-generated files under the module's `work/` directory.
+7. Keep test-generated files under the module's `work/` and `reports/`
+   directories.
 
 The regression must not rely on another module's job output. If the DUT imports
 a shared package or instantiates another source module, include that dependency
 in the module's file lists so a clean job can compile it independently.
 
-The current shared simulator adapters do not schedule a list of independent
-test executables. A future per-test process matrix requires an explicit
-`mosaic-flow` extension with a test-list contract, result aggregation, and one
-final status. Until that extension exists, keep the supported one-regression-top
-model.
+The normal simulator adapter does not schedule a list of independent test
+executables. PyUVM may discover several decorated tests in one Python module,
+but still aggregates them into one flow status. A future process-level test
+matrix requires an explicit `mosaic-flow` extension with a test-list contract,
+result aggregation, and one final status.
 
 ## Container execution
 

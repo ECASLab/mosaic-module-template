@@ -1,3 +1,4 @@
+// Minimal unconstrained harness shared by proof and property-reachability tasks.
 module mosaic_module_formal;
   localparam int unsigned DATA_WIDTH = 32;
 
@@ -6,26 +7,17 @@ module mosaic_module_formal;
   (* anyseq *)logic                  enable_i;
   (* anyseq *)logic [DATA_WIDTH-1:0] data_i;
   logic [DATA_WIDTH-1:0] data_o;
-  logic                  past_valid = 1'b0;
 
   mosaic_module #(.DATA_WIDTH(DATA_WIDTH)) dut (.*);
 
-  always_comb begin
-    if (!rst_ni) begin
-      assert (data_o == '0);
-    end
-  end
+  // Select one shared wrapper for each proof or reachability task. Keeping
+  // directives out of this harness prevents formal-only copies from diverging.
+`ifdef FORMAL_ASSERTIONS
+  mosaic_module_bind #(.DATA_WIDTH(DATA_WIDTH)) i_mosaic_module_bind (.*);
+`endif
 
-  always_ff @(posedge clk_i) begin
-    past_valid <= 1'b1;
-
-    if (past_valid && rst_ni && $past(rst_ni)) begin
-      if ($past(enable_i)) begin
-        assert (data_o == $past(data_i));
-      end else begin
-        assert (data_o == $past(data_o));
-      end
-    end
-  end
+`ifdef FORMAL_COVERAGE
+  mosaic_module_coverage_bind #(.DATA_WIDTH(DATA_WIDTH)) i_mosaic_module_coverage_bind (.*);
+`endif
 
 endmodule

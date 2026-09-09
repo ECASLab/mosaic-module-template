@@ -23,6 +23,8 @@ These values must agree with the RTL and verification hierarchy:
 | `DESIGN_TOP` | Synthesizable top | `mosaic_module` |
 | `TB_TOP` | Simulation top | `mosaic_module_tb` |
 | `FORMAL_TOP` | Formal harness top | `mosaic_module_formal` |
+| `PYUVM_TOP` | HDL top exposed to cocotb | `mosaic_module` |
+| `PYUVM_TEST_MODULE` | Importable Python test module | `test_mosaic_module` |
 | `DUT_INSTANCE` | Hierarchical DUT for SAIF annotation | `mosaic_module_tb/dut` |
 
 `DUT_INSTANCE` uses the hierarchy syntax expected by PrimePower activity
@@ -34,9 +36,10 @@ the simulation source name is sufficient.
 `FLOW_CONFIG_ROOT` points to the module-owned `flows/` directory. Other exported
 paths identify:
 
-- RTL and simulation file lists
+- RTL, simulation, property, assertion, and coverage file lists
+- PyUVM test path, Python module, HDL top, and DUT file list
 - Verible and Verilator waiver policy
-- Formal and equivalence configuration
+- Formal proof, formal cover, and equivalence configuration
 - OpenROAD design configuration
 - Synthesis, CDC, DFT, and UPF intent
 - Report and work roots
@@ -54,6 +57,7 @@ Every canonical flow has an explicit module policy:
 
 ```make
 FLOW_verilator_sim := enabled
+FLOW_pyuvm_open_source := enabled
 FLOW_openroad := disabled
 ```
 
@@ -61,8 +65,10 @@ Only `enabled` and `disabled` are valid. Disabled flows record `SKIP` when their
 target is invoked. The quality gate requires `PASS` for enabled flows and
 `SKIP` for disabled flows.
 
-The template enables the portable RTL gate, disables optional OpenROAD, selects
-VC CDC, and leaves commercial flows enabled for local qualification.
+The template enables normal Verilator simulation and open-source PyUVM in the
+portable RTL gate. It disables optional OpenROAD, selects VC CDC, keeps
+commercial PyUVM disabled, and leaves the other commercial flows enabled for
+local qualification.
 
 Run:
 
@@ -71,6 +77,63 @@ make flow-config-check
 ```
 
 Review the output after every state or dependency change.
+
+## PyUVM and shared verification
+
+PyUVM does not import or invoke SystemVerilog assertions. The Python test drives
+and observes `PYUVM_TOP` through cocotb. During model construction, the shared
+adapter compiles the following HDL layers in order:
+
+1. `PYUVM_FILELIST` for the DUT and required packages
+2. `PROPERTY_FILELIST` for shared sequence and property definitions
+3. `ASSERTION_FILELIST` for assertion checkers and bind wrappers
+4. `COVERAGE_FILELIST` for HDL coverage models and bind wrappers
+
+The simulator therefore evaluates SVA and HDL coverage concurrently with the
+Python-driven test. A terminating SVA failure also fails the PyUVM flow. Normal
+SystemVerilog simulation uses the same property, assertion, and coverage lists.
+The SymbiYosys proof and cover configurations explicitly instantiate the same
+wrappers because open-source formal frontends do not reliably apply
+simulation-oriented `bind` statements.
+
+The main module-owned settings are:
+
+| Variable | Purpose |
+| --- | --- |
+| `PROPERTY_FILELIST` | Shared sequences and temporal property definitions |
+| `ASSERTION_FILELIST` | Assertion checker and bind wrapper sources |
+| `COVERAGE_FILELIST` | HDL coverage model and bind wrapper sources |
+| `PYUVM_FILELIST` | DUT sources compiled for the PyUVM HDL top |
+| `PYUVM_TOP` | HDL top visible to cocotb |
+| `PYUVM_TEST_MODULE` | Importable Python module containing decorated PyUVM tests |
+| `PYUVM_TEST_PATH` | Directory prepended to the Python import path |
+| `PYUVM_COVERAGE` | Enables simulator-native coverage when set to `enabled` |
+| `FORMAL_COVER_CONFIG` | SymbiYosys cover reachability configuration |
+
+Run the portable PyUVM flow directly with:
+
+```sh
+make open-pyuvm
+```
+
+The commercial policy is disabled in the template. In an authorized licensed
+environment, enable `FLOW_pyuvm_commercial` and select the qualified backend:
+
+```sh
+make PYUVM_COMMERCIAL_SIMULATOR=vcs commercial-pyuvm
+make PYUVM_COMMERCIAL_SIMULATOR=xcelium commercial-pyuvm
+```
+
+Both commercial backends consume the same Python test and shared SystemVerilog
+verification layers. Simulator-specific compatibility and coverage options
+must be qualified before they become release evidence.
+
+`reports/pyuvm_open_source/coverage.dat` and `coverage.info` are native HDL
+coverage evidence. `functional-coverage.json` is produced by the Python test
+and remains a separate verification artifact. Neither form replaces the other.
+The complete adapter contract and optional simulator settings are documented in
+the shared
+[configuration reference](../mosaic-flow/docs/configuration.md#design-and-path-variables).
 
 ## Dependencies
 

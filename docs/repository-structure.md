@@ -8,7 +8,9 @@ intent from the independently versioned shared methodology.
 
 ```text
 module-repository/
-|-- .github/workflows/       Portable module CI
+|-- .github/                 Portable module CI and evidence checks
+|   |-- scripts/             CI-owned release-evidence validators
+|   `-- workflows/           Native and containerized quality gates
 |-- config/                  Cross-flow module configuration
 |-- docs/                    Design contract and engineering records
 |-- filelists/               Ordered source manifests
@@ -16,7 +18,7 @@ module-repository/
 |-- mosaic-flow/             Pinned methodology Git submodule
 |-- reports/                 Generated reviewable results
 |-- rtl/                     Synthesizable SystemVerilog
-|-- verif/                   Simulation, assertions, formal, models, coverage
+|-- verif/                   TB, PyUVM, properties, assertions, formal, coverage
 |-- work/                    Disposable tool databases and generated artifacts
 |-- Dockerfile               Reproducible portable-tool environment
 |-- Makefile                 Thin importer of the shared Make API
@@ -37,11 +39,13 @@ Organize verification by purpose:
 
 ```text
 verif/
-|-- assertions/             Bound SystemVerilog assertions
+|-- properties/             Shared sequences and temporal properties
+|-- assertions/             Assertion checker and simulation bind wrapper
+|-- coverage/               HDL coverage model and simulation bind wrapper
 |-- formal/                 Formal harnesses and assumptions
-|-- tb/                     Unit-level simulation testbench and tests
-|-- models/                 Optional reference models
-`-- coverage/               Optional coverage models and plans
+|-- pyuvm/                  Python tests, agents, monitors, and scoreboards
+|-- tb/                     Unit-level SystemVerilog testbench and tests
+`-- models/                 Optional reference models
 ```
 
 Shared verification libraries may be dependencies, but this repository remains
@@ -52,12 +56,17 @@ responsible for proving its module without relying on a full MOSAIC integration.
 File lists are ordered source manifests and form part of the build contract:
 
 - `rtl.f` contains synthesizable sources and include directories.
-- `tb.f` contains or imports RTL plus simulation and assertion sources.
-- `formal.f` may support formal tools or local utilities even when a specific
-  `.sby` file lists its own sources.
+- `properties.f` supplies include paths or sources shared by checking layers.
+- `assertions.f` contains assertion checkers and their bind wrappers.
+- `coverage.f` contains HDL coverage models and their bind wrappers.
+- `tb.f` imports RTL plus SystemVerilog testbench sources.
+- `formal.f` composes RTL, shared properties, assertions, and the formal harness.
 
 Use paths that resolve from the repository root. Keep tool-specific command-line
 options out of shared file lists unless every consuming adapter supports them.
+Normal simulation and PyUVM append the property, assertion, and coverage lists
+to their primary source list. Formal configurations compile the same wrappers
+explicitly. This keeps temporal behavior in one design-owned implementation.
 
 ## Configuration hierarchy
 
@@ -82,7 +91,7 @@ Contains module-owned inputs grouped by the shared adapter that consumes them:
 | `eqy/` | Golden and gate setup plus equivalence strategies |
 | `openroad/` | PDK-backed design configuration and timing constraints |
 | `sg_dft/` | Test clocks, modes, resets, and exclusions |
-| `symbiyosys/` | Proof mode, engines, sources, and formal top |
+| `symbiyosys/` | Proof and cover modes, engines, sources, and formal top |
 | `synthesis/` | Synthesis timing constraints |
 | `vc_lp/` | UPF power domains, supplies, states, isolation, and retention |
 | `verible/` | Style policy and reviewed style waivers |

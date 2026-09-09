@@ -34,11 +34,18 @@ gate alone is not sufficient ASIC release evidence.
   test, assertion, formal property, or reviewed combination.
 - [ ] All supported parameter configurations have evidence.
 - [ ] Positive, negative, reset, error, and boundary tests pass.
-- [ ] Assertions run in simulation and reach meaningful antecedents.
+- [ ] Enabled SystemVerilog and PyUVM regressions pass.
+- [ ] Normal simulation, PyUVM, and formal consume the reviewed shared property,
+  assertion, and coverage sources without duplicated checking logic.
+- [ ] Assertions run in simulation and PyUVM and reach meaningful antecedents.
 - [ ] Formal assumptions are reviewed for overconstraint.
 - [ ] Formal proofs pass at justified depth or by complete proof.
+- [ ] Formal cover mode demonstrates required scenario reachability.
 - [ ] RTL-to-Yosys-netlist equivalence passes.
+- [ ] Native HDL and Python functional coverage are reviewed independently.
 - [ ] Functional and code coverage goals are met or deviations are approved.
+- [ ] VCS or Xcelium PyUVM evidence passes when commercial PyUVM belongs to the
+  module's release scope.
 
 ## Constraints and static checks
 
@@ -83,6 +90,8 @@ gate alone is not sufficient ASIC release evidence.
 ## Reproducibility and evidence
 
 - [ ] Native `make clean open-source` passes.
+- [ ] PyUVM status, JUnit, native coverage, functional coverage, and version
+  evidence pass `./.github/scripts/check-pyuvm-evidence.sh` when enabled.
 - [ ] The pinned Docker image builds and its portable gate passes.
 - [ ] GitHub Actions passes using the recorded gitlink revision.
 - [ ] Commercial gates pass in the authorized local or self-hosted environment.
