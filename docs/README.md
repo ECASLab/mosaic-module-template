@@ -41,8 +41,8 @@ keep module-specific decisions here.
    file lists, flow selection, dependencies, constraints, and site inputs.
 5. [Interface specification](interface.md) defines the hardware contract that
    consumers may rely on.
-6. [Verification plan](verification-plan.md) maps requirements to simulation,
-   assertions, formal properties, and coverage.
+6. [Verification plan](verification-plan.md) maps requirements to SystemVerilog
+   simulation, PyUVM, shared assertions, formal properties, and coverage.
 7. [Reviewed waivers](waivers.md) records every accepted tool exception.
 8. [Release checklist](release-checklist.md) defines the evidence required
    before publishing a module revision.
@@ -57,13 +57,18 @@ keep module-specific decisions here.
 | Enable or disable checks | `config/flows.mk` |
 | Add RTL sources | `filelists/rtl.f` |
 | Add simulation sources | `filelists/tb.f` |
-| Define formal proof | `flows/symbiyosys/formal.sby` |
+| Define shared properties | `filelists/properties.f` |
+| Define assertions | `filelists/assertions.f` |
+| Define HDL coverage | `filelists/coverage.f` |
+| Add PyUVM tests | `verif/pyuvm/` |
+| Define formal proof and covers | `flows/symbiyosys/` |
 | Define synthesis timing | `flows/synthesis/timing.sdc` |
 | Define CDC intent | `flows/cdc/constraints.tcl` |
 | Define DFT intent | `flows/sg_dft/constraints.tcl` |
 | Define power intent | `flows/vc_lp/power.upf` |
 | Validate project policy | `make flow-config-check` |
 | Run portable acceptance | `make clean open-source` |
+| Validate PyUVM evidence | `./.github/scripts/check-pyuvm-evidence.sh` |
 | Inspect results | `reports/<flow-id>/` |
 
 ## Documentation completion rule

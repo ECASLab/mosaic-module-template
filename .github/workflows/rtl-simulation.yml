@@ -67,7 +67,7 @@ jobs:
         uses: actions/cache@v5
         with:
           path: ~/.cache/mosaic
-          key: mosaic-tools-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('mosaic-flow/config/tool-versions.env') }}
+          key: mosaic-tools-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('mosaic-flow/config/tool-versions.env', 'mosaic-flow/config/pyuvm-requirements.txt') }}
 
       - name: Set up pinned open-source tools
         run: make setup-open-source
@@ -76,7 +76,7 @@ jobs:
         run: |
           # shellcheck disable=SC2016
           make --no-print-directory --silent \
-            --eval='mosaic-export-tool-paths: ; @printf "%s\n" "$(VERIBLE_ROOT)/bin" "$(SLANG_ROOT)/bin" "$(OSS_CAD_SUITE_ROOT)/bin"' \
+            --eval='mosaic-export-tool-paths: ; @printf "%s\n" "$(PYUVM_ROOT)/bin" "$(VERIBLE_ROOT)/bin" "$(SLANG_ROOT)/bin" "$(OSS_CAD_SUITE_ROOT)/bin"' \
             mosaic-export-tool-paths >> "${GITHUB_PATH}"
 
       - name: Record tool versions
@@ -90,12 +90,17 @@ jobs:
             eqy --version
             verible-verilog-lint --version
             slang --version
+            python --version
+            python -c 'import cocotb, pyuvm; print(f"cocotb {cocotb.__version__}"); print(f"pyuvm {pyuvm.__version__}")'
           } | tee reports/tool_versions/versions.log
 
       - name: Run portable open-source RTL flow
         run: |
           set -o pipefail
           make open-source 2>&1 | tee ci-artifacts/native-flow.log
+
+      - name: Validate native PyUVM evidence
+        run: ./.github/scripts/check-pyuvm-evidence.sh
 
       - name: Upload RTL reports
         if: always()
@@ -185,6 +190,9 @@ jobs:
             --volume "${GITHUB_WORKSPACE}:/workspace" \
             "mosaic-module-ci:${GITHUB_SHA}" clean open-source \
             2>&1 | tee ci-artifacts/container-flow.log
+
+      - name: Validate container PyUVM evidence
+        run: ./.github/scripts/check-pyuvm-evidence.sh
 
       - name: Upload container RTL reports
         if: always()

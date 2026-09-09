@@ -21,9 +21,10 @@ make flow-config-check
 make clean open-source
 ```
 
-The first open-source target installs the pinned OSS CAD Suite, Verible, and
-Slang releases under `${XDG_CACHE_HOME:-$HOME/.cache}/mosaic`. Set
-`MOSAIC_TOOLS_ROOT` to use another cache location.
+The first open-source target installs the pinned OSS CAD Suite, Verible, Slang,
+PyUVM, and cocotb releases under
+`${XDG_CACHE_HOME:-$HOME/.cache}/mosaic`. Set `MOSAIC_TOOLS_ROOT` to use another
+cache location.
 
 ## Repository contract
 
@@ -42,7 +43,7 @@ The module must remain independently verifiable before system integration.
 
 ```text
 rtl/                  Synthesizable SystemVerilog
-verif/                Tests, assertions, formal harnesses, models, and coverage
+verif/                TB, PyUVM, properties, assertions, formal, and coverage
 filelists/            Ordered design and verification source lists
 config/               Module identity and flow policy
 flows/                Module-owned inputs grouped by shared flow name
@@ -74,8 +75,8 @@ is documented in [Project configuration](docs/project-configuration.md).
 Start from [Creating a module](docs/creating-a-module.md). At minimum:
 
 1. Rename the example RTL and verification hierarchy.
-2. Replace the example datapath and smoke verification.
-3. Update file lists and all module tops.
+2. Replace the example datapath, testbench, and PyUVM smoke verification.
+3. Update the RTL, property, assertion, coverage, simulation, and formal lists.
 4. Define timing, CDC, DFT, low-power, formal, and physical intent.
 5. Review flow states and dependencies.
 6. Replace template documentation with module-specific records.
@@ -117,6 +118,8 @@ evidence and every disabled flow is justified by project policy. Use the
 keep all accepted exceptions in [Reviewed waivers](docs/waivers.md).
 
 The open-source gate covers style, formatting, elaboration, lint, generic
-synthesis, formal verification, RTL-to-netlist equivalence, and simulation.
-Technology-mapped synthesis, timing, power, CDC, DFT, and low-power signoff use
-the configured local implementation environment.
+synthesis, formal proof and cover reachability, RTL-to-netlist equivalence,
+SystemVerilog simulation, PyUVM, and native HDL coverage. PyUVM functional
+coverage remains a separate report and must be reviewed alongside native
+coverage. Technology-mapped synthesis, timing, power, CDC, DFT, and low-power
+signoff use the configured local implementation environment.

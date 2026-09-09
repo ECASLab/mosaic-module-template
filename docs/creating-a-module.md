@@ -31,12 +31,16 @@ At minimum, rename and update:
 
 - `rtl/mosaic_module.sv`
 - `verif/tb/mosaic_module_tb.sv`
+- `verif/pyuvm/test_mosaic_module.py`
+- Both files under `verif/properties/`
 - `verif/assertions/mosaic_module_sva.sv`
 - `verif/assertions/mosaic_module_bind.sv`
+- Both files under `verif/coverage/`
 - `verif/formal/mosaic_module_formal.sv`
-- All three files under `filelists/`
+- Every file under `filelists/`
 - `config/design.mk`
 - `flows/symbiyosys/formal.sby`
+- `flows/symbiyosys/formal_cover.sby`
 - `flows/eqy/equivalence.eqy`
 - `flows/openroad/config.mk`
 - `flows/vc_lp/power.upf`
@@ -80,17 +84,24 @@ simulator and linter accepts them. Do not add delays to synthesizable RTL.
 Update `filelists/rtl.f` in dependency order. Add packages before modules that
 import them and include directories before files that require them.
 
-Update `filelists/tb.f` with the unit testbench, assertions, and verification
-dependencies. Keep the simulation top consistent with `TB_TOP`.
+Update `filelists/properties.f`, `filelists/assertions.f`, and
+`filelists/coverage.f` without duplicating those sources in `filelists/tb.f`.
+The shared adapters append the reusable verification layers in that order.
 
-Update `filelists/formal.f` and the source list in
-`flows/symbiyosys/formal.sby`. Keep the formal top consistent with `FORMAL_TOP`.
+Update `filelists/tb.f` with RTL and the unit testbench. Keep the simulation top
+consistent with `TB_TOP`. Set `PYUVM_FILELIST` to the sources required by
+`PYUVM_TOP`, normally `filelists/rtl.f`.
+
+Update `filelists/formal.f` and both source lists under `flows/symbiyosys/`.
+Keep the proof and cover tops consistent with `FORMAL_TOP`.
 
 Run an early frontend check:
 
 ```sh
 make open-elaborate
 make open-lint
+make open-pyuvm
+make open-formal
 ```
 
 ## Replace the smoke verification
@@ -101,13 +112,21 @@ behavior. Replace it with tests and checking derived from the new interface.
 Update all of these together:
 
 - Unit-level stimulus and scoreboards
-- Bound assertions
-- Formal harness assumptions and assertions
-- Cover properties or functional coverage
+- PyUVM stimulus, checking, and functional coverage
+- Shared sequences and properties
+- Bound assertion and HDL coverage wrappers
+- Formal assumptions plus explicit reuse of the same wrappers
 - [Verification plan](verification-plan.md)
 
 Avoid assumptions that remove legal interface behavior from formal analysis.
 Use negative tests to prove the testbench and assertions detect injected faults.
+
+PyUVM does not call SVA from Python. Cocotb drives and observes the DUT while
+the selected HDL simulator compiles the property, assertion, and coverage
+filelists and evaluates their bound wrappers concurrently. Keep Python
+functional coverage separate from simulator-native assertion, line, branch,
+and toggle coverage. See
+[Project configuration](project-configuration.md#pyuvm-and-shared-verification).
 
 ### Parameterized modules
 
@@ -208,6 +227,7 @@ Prepare tools and run from a clean generated state:
 ```sh
 make setup-open-source
 make clean open-source
+./.github/scripts/check-pyuvm-evidence.sh
 ```
 
 Build and validate the container path:
@@ -225,6 +245,8 @@ docker run --rm \
   --env HOME=/tmp \
   --volume "$PWD:/workspace" \
   module-ci:local clean open-source
+
+./.github/scripts/check-pyuvm-evidence.sh
 ```
 
 In the licensed environment, qualify all enabled Synopsys adapters and run the
