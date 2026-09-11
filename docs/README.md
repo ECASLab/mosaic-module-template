@@ -43,8 +43,10 @@ keep module-specific decisions here.
    consumers may rely on.
 6. [Verification plan](verification-plan.md) maps requirements to SystemVerilog
    simulation, PyUVM, shared assertions, formal properties, and coverage.
-7. [Reviewed waivers](waivers.md) records every accepted tool exception.
-8. [Release checklist](release-checklist.md) defines the evidence required
+7. [Qualification and release evidence](qualification.md) explains parameter
+   profiles, coverage, campaigns, static intent, OpenROAD, and manifests.
+8. [Reviewed waivers](waivers.md) records every accepted tool exception.
+9. [Release checklist](release-checklist.md) defines the evidence required
    before publishing a module revision.
 
 ## Quick reference
@@ -66,8 +68,16 @@ keep module-specific decisions here.
 | Define CDC intent | `flows/cdc/constraints.tcl` |
 | Define DFT intent | `flows/sg_dft/constraints.tcl` |
 | Define power intent | `flows/vc_lp/power.upf` |
+| Define coverage policy | `config/coverage-policy.json` |
+| Define negative and four-state campaigns | `config/qualification-campaigns.json` |
+| Define portable SDC and UPF expectations | `config/static-intent.json` |
+| Declare parameter profiles | `config/parameter-profiles.json` |
+| Define physical evidence policy | `flows/openroad/evidence-policy.json` |
 | Validate project policy | `make flow-config-check` |
 | Run portable acceptance | `make clean open-source` |
+| Run all parameter profiles | `make all-profiles PROFILE_JOBS=4` |
+| Run containerized OpenROAD | `make FLOW_openroad=enabled OPENROAD_EXECUTION_MODE=container open-physical` |
+| Build a release manifest | `make release-manifest release-manifest-validate` |
 | Validate PyUVM evidence | `./.github/scripts/check-pyuvm-evidence.sh` |
 | Inspect results | `reports/<flow-id>/` |
 

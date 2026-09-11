@@ -11,7 +11,8 @@ module-repository/
 |-- .github/                 Portable module CI and evidence checks
 |   |-- scripts/             CI-owned release-evidence validators
 |   `-- workflows/           Native and containerized quality gates
-|-- config/                  Cross-flow module configuration
+|-- config/                  Cross-flow configuration and qualification policy
+|   `-- examples/           Non-default manifest examples and fixtures
 |-- docs/                    Design contract and engineering records
 |-- filelists/               Ordered source manifests
 |-- flows/                   Module-owned inputs for shared flow adapters
@@ -43,6 +44,7 @@ verif/
 |-- assertions/             Assertion checker and simulation bind wrapper
 |-- coverage/               HDL coverage model and simulation bind wrapper
 |-- formal/                 Formal harnesses and assumptions
+|-- mutations/              Deliberately incorrect qualification fixtures
 |-- pyuvm/                  Python tests, agents, monitors, and scoreboards
 |-- tb/                     Unit-level SystemVerilog testbench and tests
 `-- models/                 Optional reference models
@@ -81,6 +83,14 @@ flows.
 Defines project policy. Every canonical flow is explicitly enabled or disabled,
 and project-specific dependencies may replace shared defaults.
 
+Versioned JSON policies beside these Make fragments define machine-readable
+qualification intent. `coverage-policy.json` sets HDL and formal coverage
+requirements, `qualification-campaigns.json` defines expected-failure and
+four-state controls, and `static-intent.json` describes the SDC and UPF subset
+that must be present. A production parameter matrix normally belongs in
+`config/parameter-profiles.json`. The template keeps its demonstration matrix
+under `config/examples/` so the no-profile single-module command remains valid.
+
 ### `flows/`
 
 Contains module-owned inputs grouped by the shared adapter that consumes them:
@@ -107,14 +117,14 @@ therefore improve a tool adapter without silently replacing module constraints.
 root Makefile imports:
 
 ```make
-include config/design.mk
-include $(FLOW_ROOT)/config/tools.mk
-include $(FLOW_ROOT)/mk/module.mk
+include $(FLOW_ROOT)/mk/project.mk
 ```
 
-Keep this Makefile thin. New reusable targets belong in `mosaic-flow`. New
-module inputs belong in `config/design.mk` or the matching module-owned flow
-directory.
+`project.mk` loads the normal single-module configuration when no module
+manifest exists. It activates validated project selection when
+`config/modules.json` is present. Keep this Makefile thin. New reusable targets
+belong in `mosaic-flow`. New module inputs belong in `config/design.mk`, a
+selected module configuration, or the matching module-owned flow directory.
 
 The complete shared hierarchy is documented in
 [`mosaic-flow/docs/architecture.md`](../mosaic-flow/docs/architecture.md).
@@ -125,7 +135,9 @@ The complete shared hierarchy is documented in
 
 Contains statuses, logs, and compact summaries intended for review or CI
 retention. The first file to inspect is usually
-`reports/<canonical-flow-id>/status.txt`.
+`reports/<canonical-flow-id>/status.txt`. Parameter profiles and selected
+modules insert their names before the flow ID. Release manifests are separated
+again by execution context under `reports/release_manifest/<context>/`.
 
 ### `work/`
 
@@ -138,7 +150,9 @@ flow reports while preserving the report root placeholder.
 ## Container and CI ownership
 
 The GitHub workflow validates the module with the exact `mosaic-flow` revision
-recorded by the gitlink. It runs both native and containerized portable checks.
+recorded by the gitlink. It runs native and containerized portable checks plus a
+dedicated containerized Nangate45 physical fixture. Generated ownership and
+submodule cleanliness are checked before evidence is uploaded.
 
 The Dockerfile copies only the executable shared methodology into the image.
 The module repository is mounted at runtime, which keeps RTL and generated

@@ -38,3 +38,20 @@ Expires or removal condition:
 ## Accepted waivers
 
 None.
+
+## Qualification exclusions
+
+Coverage exclusions belong in `config/coverage-policy.json` with an attributable
+reason and review record. They are not tool waivers and must not be used to hide
+unreachable requirements or untested legal behavior.
+
+The negative mutation command suppresses Verilator `DECLFILENAME` only for the
+deliberately misnamed candidate file under `verif/mutations/`. This command-local
+diagnostic control is not applied to production RTL and is not an accepted
+release waiver. Normal lint remains governed by the reviewed Verilator waiver
+file above.
+
+Portable static-intent validation limitations and the public Nangate45 signoff
+boundary are methodology scope statements, not waivers. A required commercial
+or signoff flow must be enabled and pass once it belongs to the module release
+scope.
