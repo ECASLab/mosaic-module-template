@@ -20,14 +20,14 @@ module mosaic_module_coverage #(
     if (rst_ni) begin
       cover (enable_i);
       cover (!enable_i);
-      cover (enable_i && data_i == 32'h1234_5678);
+      cover (enable_i && data_i == {DATA_WIDTH{1'b1}});
       cover (past_valid && $past(
           rst_ni
       ) && $past(
           enable_i
       ) && $past(
           data_i
-      ) == 32'h1234_5678 && data_o == 32'h1234_5678);
+      ) == {DATA_WIDTH{1'b1}} && data_o == {DATA_WIDTH{1'b1}});
     end
   end
 `else

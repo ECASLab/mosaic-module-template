@@ -4,12 +4,15 @@
 
 The module consumes shared defaults and then applies design-owned policy:
 
-1. `config/design.mk` defines module identity, paths, and technology inputs.
-2. `mosaic-flow/config/tools.mk` defines pinned tool locations and command
+1. `mosaic-flow/mk/project.mk` selects the single-module or manifest-backed
+   project mode.
+2. `config/design.mk` defines module identity, paths, and technology inputs.
+3. `mosaic-flow/config/tools.mk` defines pinned tool locations and command
    defaults.
-3. `mosaic-flow/config/flows.mk` defines canonical flow states and dependencies.
-4. Module `config/flows.mk` replaces shared states or dependencies.
-5. Make command-line assignments provide temporary diagnostic overrides.
+4. `mosaic-flow/config/flows.mk` defines canonical flow states and dependencies.
+5. Module `config/flows.mk` replaces shared states or dependencies.
+6. A selected parameter profile narrows flows and overrides parameters or tops.
+7. Make command-line assignments provide temporary diagnostic overrides.
 
 The root Makefile establishes this order. Keep it free of design-specific flow
 logic.
@@ -51,6 +54,12 @@ The current Design Compiler adapter reads
 `$(CONSTRAINT_DIR)/timing.sdc`. Keep `SYNTHESIS_CONSTRAINT_FILE` consistent with
 that file.
 
+Qualification paths include `COVERAGE_QUALIFICATION_POLICY`,
+`QUALIFICATION_CAMPAIGN_MANIFEST`, `STATIC_INTENT_CONFIG`,
+`OPENROAD_EVIDENCE_POLICY`, and the optional
+`PARAMETER_PROFILE_MANIFEST`. Keep these files versioned and below
+`MODULE_ROOT` so release evidence can hash them.
+
 ## Flow states
 
 Every canonical flow has an explicit module policy:
@@ -65,10 +74,11 @@ Only `enabled` and `disabled` are valid. Disabled flows record `SKIP` when their
 target is invoked. The quality gate requires `PASS` for enabled flows and
 `SKIP` for disabled flows.
 
-The template enables normal Verilator simulation and open-source PyUVM in the
-portable RTL gate. It disables optional OpenROAD, selects VC CDC, keeps
-commercial PyUVM disabled, and leaves the other commercial flows enabled for
-local qualification.
+The template enables normal Verilator simulation, open-source PyUVM, coverage
+qualification, negative testing, four-state testing, and static-intent checks
+in the portable gate. OpenROAD is enabled only by the dedicated physical job.
+All commercial flows are disabled by default and must be enabled deliberately
+in a qualified licensed environment.
 
 Run:
 
@@ -77,6 +87,55 @@ make flow-config-check
 ```
 
 Review the output after every state or dependency change.
+
+Coverage qualification depends on the normal Verilator simulation artifact:
+
+```make
+FLOW_DEPENDENCIES_coverage_qualification := verilator_sim
+```
+
+The validator rejects an enabled flow whose dependency is disabled, as well as
+unknown IDs, cycles, and contradictory aggregate policy.
+
+## Parameter profiles
+
+The example `config/examples/parameter-profiles.json` qualifies `DATA_WIDTH`
+values 1, 32, and 64 without making profile selection mandatory for the normal
+single-module command. Validate and run it with:
+
+```sh
+make PARAMETER_PROFILE_MANIFEST=config/examples/parameter-profiles.json \
+  profile-manifest-check
+make PARAMETER_PROFILE_MANIFEST=config/examples/parameter-profiles.json \
+  profile-list
+make PARAMETER_PROFILE_MANIFEST=config/examples/parameter-profiles.json \
+  profile-matrix
+make PARAMETER_PROFILE_MANIFEST=config/examples/parameter-profiles.json \
+  all-profiles PROFILE_JOBS=3
+```
+
+Production modules should move their reviewed manifest to
+`config/parameter-profiles.json`. Once that default exists, ordinary flow
+targets require `PROFILE=<name>`. Each profile receives isolated
+`reports/<profile>/` and `work/<profile>/` trees. `all-profiles` uses bounded
+parallel execution and fails when any child fails or lacks required evidence.
+
+## Qualification and release inputs
+
+The module-owned policy files use versioned schemas supplied by the pinned
+methodology:
+
+| Input | Purpose |
+| --- | --- |
+| `config/coverage-policy.json` | Independent line, branch, toggle, user, named coverpoint, and formal-cover requirements |
+| `config/qualification-campaigns.json` | Positive controls, expected failures, mutations, and Icarus X/Z detection |
+| `config/static-intent.json` | Expected timing kind, SDC commands and ports, profile consistency, and UPF structure |
+| `flows/openroad/evidence-policy.json` | Required physical artifacts, report patterns, and metric thresholds |
+
+Run the gates independently with `make open-coverage`,
+`make open-negative`, `make open-four-state`, and
+`make open-static-intent`. See [Qualification and release
+evidence](qualification.md) for their evidence and signoff boundaries.
 
 ## PyUVM and shared verification
 

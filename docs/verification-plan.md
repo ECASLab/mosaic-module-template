@@ -19,9 +19,17 @@ The template verifies:
 - RTL compiles and elaborates in independent frontends
 - RTL is generically synthesizable
 - Yosys synthesis preserves RTL behavior under the configured EQY strategy
+- Minimum, nominal, and wide parameter profiles propagate consistently through
+  elaboration, lint, synthesis, formal, equivalence, simulation, and PyUVM
+- Quantitative HDL and formal coverage policy passes
+- Negative controls prove assertion, elaboration, equivalence, and monitor
+  failures are detected
+- A pinned four-state simulator detects X and Z on the example control input
+- Portable SDC and UPF intent matches the module-owned expectation
 
-The example does not claim protocol, performance, quantitative coverage, or
-parameter-space closure for a production module.
+The example demonstrates the qualification mechanisms. It does not claim that
+the three representative widths close the parameter space of a replacement
+production module.
 
 ## Verification environments
 
@@ -34,13 +42,18 @@ parameter-space closure for a production module.
 | SymbiYosys cover | `mosaic_module_formal` | Reachability of representative reset, update, and hold scenarios |
 | EQY | `mosaic_module` | RTL-to-Yosys-netlist equivalence |
 | Static frontends | `mosaic_module` | Style, lint, compile, hierarchy, and synthesizability checks |
+| Coverage qualification | Collected Verilator and SymbiYosys evidence | Enforce line, branch, toggle, user, named coverpoint, and formal-cover policy |
+| Negative campaign | Module-owned controls and mutations | Prove expected failures are attributable and do not escape |
+| Icarus four-state campaign | `mosaic_module_four_state_tb` | Prove X and Z control detection with a disabled-monitor control |
+| Static-intent validator | Module SDC and UPF | Check the supported portable timing and power-intent subset |
+| Containerized ORFS | `mosaic_module` | Produce exploratory Nangate45 physical evidence |
 
 ## Requirements traceability
 
 | ID | Requirement | SystemVerilog simulation | PyUVM | Assertion or formal evidence |
 | --- | --- | --- | --- | --- |
 | `REQ-RST-001` | Active reset clears `data_o` | Reset sequence in `mosaic_module_tb` | Reset phase in `MosaicModuleTest` | `reset_clears_output` |
-| `REQ-DATA-001` | Enabled edge captures `data_i` | Directed `32'h1234_5678` transfer | Enabled-update phase and functional coverage | `output_updates_when_enabled` |
+| `REQ-DATA-001` | Enabled edge captures `data_i` | Width-aware all-ones transfer | Enabled-update phase and functional coverage | `output_updates_when_enabled` |
 | `REQ-HOLD-001` | Disabled edge preserves `data_o` | Disable after directed transfer | Disabled-hold phase and functional coverage | `output_holds_when_disabled` |
 | `REQ-SYN-001` | RTL is synthesizable | Not applicable | Not applicable | Yosys synthesis and structural checks |
 | `REQ-EQY-001` | Generic netlist matches RTL | Not applicable | Not applicable | EQY SAT strategy |
@@ -54,9 +67,11 @@ The current directed test:
 
 1. Holds asynchronous reset active for two rising edges.
 2. Releases reset on a falling edge.
-3. Applies one enabled input value.
-4. Disables updates and checks the registered output.
-5. Waits long enough for one-cycle implication assertions to complete.
+3. Captures an all-ones input value.
+4. Changes the input to zero while disabled and checks that the output holds.
+5. Re-enables capture and checks the zero transition.
+6. Reasserts asynchronous reset and checks that the output clears.
+7. Waits long enough for one-cycle implication assertions to complete.
 
 Production simulation must add as applicable:
 
@@ -136,8 +151,10 @@ and any synthesis transformations that require matching rules.
 
 The template produces native Verilator coverage for normal simulation and
 PyUVM, a separate JSON functional coverage summary from PyUVM, and formal cover
-reachability results. These artifacts demonstrate the integration contract but
-do not define production closure targets. A production plan must define:
+reachability results. `config/coverage-policy.json` currently requires 90
+percent line, branch, and toggle coverage, 100 percent user coverage, hits on
+four named coverpoints, and passing formal cover reachability. A production
+plan must review and replace these example targets as appropriate:
 
 | Coverage type | Required content |
 | --- | --- |
@@ -155,38 +172,42 @@ replace transaction and scenario coverage sampled by the verification model.
 
 ## Parameter and configuration matrix
 
-The smoke flow uses `DATA_WIDTH=32`. Add a reviewed matrix for all supported
-values. At minimum, test boundary widths and values that change generated
-structure.
+The versioned demonstration manifest is
+`config/examples/parameter-profiles.json`. It stays outside the default path so
+the repository remains usable with the simple no-profile command.
 
 | Configuration | Simulation | Formal | Synthesis | Equivalence | Status |
 | --- | --- | --- | --- | --- | --- |
-| `DATA_WIDTH=32` | Required | Required | Required | Required | Template smoke |
+| `DATA_WIDTH=1` | Required | Required | Required | Required | Boundary profile |
+| `DATA_WIDTH=32` | Required | Required | Required | Required | Nominal profile |
+| `DATA_WIDTH=64` | Required | Required | Required | Required | Wide profile |
 
-The current Yosys and EQY adapters qualify only `DESIGN_TOP` with its default
-parameter values. Listing another profile in this table does not make synthesis
-or equivalence evidence exist for it. Use a reviewed wrapper top or separate
-configured verification target for every profile that requires persistent
-synthesis and EQY reports until `mosaic-flow` provides a shared parameter-matrix
-contract.
+The manifest also selects elaboration, lint, PyUVM, and static-intent evidence
+for every profile. The shared runner translates `DATA_WIDTH` for each backend,
+renders profile-local formal and EQY configuration, and isolates every report,
+work product, and synthesized netlist below the profile name. The bounded
+aggregate preserves completed evidence and fails if any child fails or is
+missing.
 
-Simulation and formal harnesses may instantiate multiple profiles in one top.
-Record those instances explicitly and distinguish structural elaboration from
-per-profile synthesis, timing, power, and equivalence evidence.
+This representative matrix is infrastructure evidence, not automatic proof of
+every legal positive integer. A production module must select its legal
+boundaries and both sides of every structural feature toggle.
 
 ## Negative testing
 
-Qualification must prove that checking fails when behavior is wrong. Introduce
-temporary faults or dedicated negative fixtures to confirm detection of:
+`config/qualification-campaigns.json` proves that checking fails when behavior
+is wrong. It contains successful simulation and equivalence controls plus
+dedicated negative fixtures for:
 
-- Incorrect reset value
-- Update while disabled
-- Failure to capture while enabled
-- Assertion failure
-- RTL and synthesized netlist mismatch
-- Lint or formatting violation
+- A mutation that violates enabled capture behavior
+- An illegal zero width rejected during elaboration
+- A deliberately inequivalent candidate netlist
+- X and Z control values detected by a four-state monitor
 
-Do not retain injected faults in the release branch.
+The CI acceptance script additionally proves that deficient coverage, an
+escaped mutation, an unavailable tool, a disabled X/Z monitor, and malformed
+static intent all fail closed. Deliberately incorrect RTL remains isolated under
+`verif/mutations/` and is not included in normal file lists.
 
 ## Exit criteria
 
@@ -200,5 +221,9 @@ Do not retain injected faults in the release branch.
 - [ ] Formal properties are proven and required cover properties are reachable.
 - [ ] Equivalence passes for every required synthesis configuration.
 - [ ] Coverage goals are met and exclusions are approved.
+- [ ] Negative and four-state campaigns pass with their positive controls.
+- [ ] Portable static intent passes and its limitations are understood.
+- [ ] Every selected parameter profile has isolated complete evidence.
+- [ ] Release manifests validate for each required execution context.
 - [ ] All waivers are recorded in [Reviewed waivers](waivers.md).
 - [ ] The release checklist is complete.

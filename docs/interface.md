@@ -22,8 +22,10 @@ MOSAIC architectural block.
 | --- | --- | --- | --- | --- |
 | `DATA_WIDTH` | `int unsigned` | `32` | Positive integers | Width of `data_i` and `data_o` |
 
-The template does not currently assert that `DATA_WIDTH` is greater than zero.
-A production module should add static parameter checks for every illegal value.
+The normal template elaboration uses 32 bits. The qualification example also
+uses 1 and 64 bits. A negative campaign confirms that `DATA_WIDTH=0` is rejected
+by elaboration. A production module should add explicit static parameter checks
+when its supported frontend set provides a portable mechanism.
 
 ## Clocks and resets
 
@@ -74,9 +76,11 @@ replaced or justified for a production module.
 ## Errors and illegal use
 
 The template has no error output and performs no runtime protocol checking.
-Unknown input values follow SystemVerilog simulation and synthesis semantics.
-Production modules must define illegal transactions, error reporting, and
-recovery behavior explicitly.
+Unknown data values follow SystemVerilog simulation and synthesis semantics.
+An X or Z value on `enable_i` is illegal verification stimulus and the dedicated
+four-state monitor rejects it. This monitor is verification collateral rather
+than a hardware error output. Production modules must define illegal
+transactions, error reporting, and recovery behavior explicitly.
 
 ## Low-power behavior
 

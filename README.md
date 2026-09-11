@@ -62,7 +62,10 @@ retains an independent project root, flow policy, regression, and report tree.
 
 ## Configuration
 
-The root `Makefile` is a thin consumer of `mosaic-flow/mk/module.mk`.
+The root `Makefile` is a thin consumer of `mosaic-flow/mk/project.mk`. The
+project API preserves the ordinary single-module commands and also activates
+validated module and parameter-profile manifests when a repository declares
+them.
 Module identity and paths belong in `config/design.mk`. Flow states and
 dependencies belong in `config/flows.mk`. Tool-specific project inputs mirror
 the shared hierarchy under `flows/<flow-name>/`.
@@ -78,15 +81,20 @@ Start from [Creating a module](docs/creating-a-module.md). At minimum:
 2. Replace the example datapath, testbench, and PyUVM smoke verification.
 3. Update the RTL, property, assertion, coverage, simulation, and formal lists.
 4. Define timing, CDC, DFT, low-power, formal, and physical intent.
-5. Review flow states and dependencies.
-6. Replace template documentation with module-specific records.
-7. Run native, containerized, and applicable commercial qualification.
+5. Replace the example coverage, campaign, static-intent, and physical-evidence
+   policies.
+6. Declare representative parameter profiles and required evidence.
+7. Review flow states and dependencies.
+8. Replace template documentation with module-specific records.
+9. Run native, containerized, physical, and applicable commercial
+   qualification.
 
 ## Continuous integration
 
-`.github/workflows/rtl-simulation.yml` runs the complete open-source gate on
-pushes and pull requests using both native and containerized execution. It does
-not invoke licensed Synopsys tools.
+`.github/workflows/rtl-simulation.yml` runs the portable gate using both native
+and pinned-container execution. It also qualifies the representative parameter
+profiles and runs a dedicated containerized Nangate45 OpenROAD job. It does not
+invoke licensed commercial tools.
 
 `ECASLab/mosaic-flow` is public, so CI does not require an additional repository
 secret. It checks out the exact submodule revision recorded here rather than a
@@ -119,7 +127,12 @@ keep all accepted exceptions in [Reviewed waivers](docs/waivers.md).
 
 The open-source gate covers style, formatting, elaboration, lint, generic
 synthesis, formal proof and cover reachability, RTL-to-netlist equivalence,
-SystemVerilog simulation, PyUVM, and native HDL coverage. PyUVM functional
+SystemVerilog simulation, PyUVM, quantitative native HDL coverage, negative and
+four-state campaigns, and portable SDC and UPF intent checks. PyUVM functional
 coverage remains a separate report and must be reviewed alongside native
-coverage. Technology-mapped synthesis, timing, power, CDC, DFT, and low-power
-signoff use the configured local implementation environment.
+coverage. The public Nangate45 job is exploratory implementation evidence.
+Technology-mapped signoff, timing, power, CDC, DFT, low-power, and physical
+verification use the configured authorized implementation environment.
+
+The module-owned qualification contracts and release-manifest commands are
+summarized in [Qualification and release evidence](docs/qualification.md).

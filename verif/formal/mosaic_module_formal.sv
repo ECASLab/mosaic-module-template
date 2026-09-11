@@ -1,6 +1,7 @@
 // Minimal unconstrained harness shared by proof and property-reachability tasks.
-module mosaic_module_formal;
-  localparam int unsigned DATA_WIDTH = 32;
+module mosaic_module_formal #(
+    parameter int unsigned DATA_WIDTH = 32
+);
 
   (* gclk   *)logic                  clk_i;
   (* anyseq *)logic                  rst_ni;

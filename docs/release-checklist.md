@@ -7,6 +7,7 @@ gate alone is not sufficient ASIC release evidence.
 
 - [ ] The module name, repository name, top-level names, and Docker labels agree.
 - [ ] Supported parameter values and configurations are listed.
+- [ ] The parameter-profile manifest validates and its matrix is deterministic.
 - [ ] Unsupported modes and external assumptions are explicit.
 - [ ] The `mosaic-flow` gitlink points to a qualified published revision.
 - [ ] The resolved flow policy has been captured with `make flow-config-check`.
@@ -44,6 +45,16 @@ gate alone is not sufficient ASIC release evidence.
 - [ ] RTL-to-Yosys-netlist equivalence passes.
 - [ ] Native HDL and Python functional coverage are reviewed independently.
 - [ ] Functional and code coverage goals are met or deviations are approved.
+- [ ] The versioned coverage policy passes for line, branch, toggle, user,
+  required named coverpoints, and formal reachability.
+- [ ] A deficient-coverage control proves that threshold enforcement fails
+  closed.
+- [ ] Negative campaigns include successful controls and detect assertion,
+  elaboration, equivalence, and mutation failures as applicable.
+- [ ] Four-state cases use a pinned four-state simulator and prove both X/Z
+  stimulus reachability and monitor detection.
+- [ ] Escaped-fault, unavailable-tool, and disabled-monitor controls are rejected
+  with the expected classifications.
 - [ ] VCS or Xcelium PyUVM evidence passes when commercial PyUVM belongs to the
   module's release scope.
 
@@ -56,6 +67,13 @@ gate alone is not sufficient ASIC release evidence.
 - [ ] DFT test modes, controllability, observability, and exclusions are reviewed.
 - [ ] UPF power domains, states, isolation, retention, and supplies match the
   architecture.
+- [ ] The versioned static-intent policy names the applicable timing kind and
+  required or forbidden power strategies.
+- [ ] Portable SDC and UPF validation passes its positive policy and rejects
+  missing, duplicate, conflicting, broad, incomplete, forbidden, and unsupported
+  controls.
+- [ ] Reviewers understand that portable static intent does not replace STA,
+  CDC, IEEE 1801, or commercial low-power signoff.
 - [ ] VC Lint, selected CDC, SpyGlass DFT, and VC LP adapters are qualified for
   the installed release and all expected statuses pass.
 
@@ -78,6 +96,12 @@ gate alone is not sufficient ASIC release evidence.
   physical implementation belongs to this module's release scope.
 - [ ] Preliminary open-source physical results are not labeled as commercial
   signoff evidence.
+- [ ] The physical-evidence policy requires nonempty DEF, GDS, ODB, SDC, and
+  netlist artifacts plus reviewed metric thresholds.
+- [ ] OpenROAD evidence records an immutable image digest or exact local ORFS
+  revision, platform, variant, input hashes, artifact hashes, and metrics.
+- [ ] Containerized physical output is owned by the invoking user and isolated
+  by selected module and parameter profile.
 
 ## Waivers
 
@@ -90,16 +114,27 @@ gate alone is not sufficient ASIC release evidence.
 ## Reproducibility and evidence
 
 - [ ] Native `make clean open-source` passes.
+- [ ] Every representative profile passes with bounded concurrency and isolated
+  reports, work products, formal artifacts, and netlists.
 - [ ] PyUVM status, JUnit, native coverage, functional coverage, and version
   evidence pass `./.github/scripts/check-pyuvm-evidence.sh` when enabled.
 - [ ] The pinned Docker image builds and its portable gate passes.
 - [ ] GitHub Actions passes using the recorded gitlink revision.
-- [ ] Commercial gates pass in the authorized local or self-hosted environment.
+- [ ] Commercial gates pass in the authorized local or self-hosted environment
+  when they belong to release scope. Otherwise their policy is an approved
+  `SKIP`.
 - [ ] Reports identify module revision, methodology revision, tool versions,
   constraints, technology, date, and configuration.
 - [ ] CI or release storage retains logs and required databases.
 - [ ] No generated work database, credential, license, or proprietary library is
   committed to Git.
+- [ ] Native, container, and applicable physical release manifests validate with
+  explicit module and methodology revisions.
+- [ ] Release manifests hash declared RTL, verification layers, constraints,
+  policies, waivers, and configuration inputs and index every enabled compact
+  evidence summary.
+- [ ] No dirty-tree override is present in publishable release evidence.
+- [ ] The source tree and `mosaic-flow` submodule remain clean after validation.
 
 ## Final commands
 
@@ -107,13 +142,19 @@ gate alone is not sufficient ASIC release evidence.
 git submodule status
 make flow-config-check
 make clean open-source
+./.github/scripts/check-qualification-controls.sh
+./.github/scripts/check-profile-evidence.sh
+make FLOW_openroad=enabled OPENROAD_EXECUTION_MODE=container open-physical
+make release-manifest release-manifest-validate
 make synopsys-check-env
 make synopsys-all CDC_TOOL=vc
 ```
 
-Run the Synopsys commands only in the licensed environment after all
-release-specific adapters are qualified. Select `CDC_TOOL=sg` instead when that
-engine is the approved project policy.
+Pass full revision IDs and a distinct `RELEASE_EXECUTION_CONTEXT` when creating
+publishable manifests. Run the Synopsys commands only in the licensed
+environment after all release-specific adapters are qualified and when those
+flows belong to release scope. Select `CDC_TOOL=sg` instead when that engine is
+the approved project policy.
 
 ## Approval record
 
