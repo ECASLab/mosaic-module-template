@@ -3,7 +3,7 @@
 `include "mosaic_module_sequences.svh"
 
 property representative_output_p;
-  (enable_i && data_i == 32'h1234_5678) ##1 data_o == 32'h1234_5678;
+  (enable_i && data_i == {DATA_WIDTH{1'b1}}) ##1 data_o == {DATA_WIDTH{1'b1}};
 endproperty
 
 property reset_clears_output_p;

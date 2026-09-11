@@ -5,4 +5,4 @@ sequence enabled_operation_s; enable_i; endsequence
 
 sequence disabled_operation_s; !enable_i; endsequence
 
-sequence representative_data_s; enable_i && data_i == 32'h1234_5678; endsequence
+sequence representative_data_s; enable_i && data_i == {DATA_WIDTH{1'b1}}; endsequence
